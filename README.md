@@ -7,6 +7,10 @@ language — its name, keywords, operators, and features — and MkLang generate
 complete, self-contained Go project with a **lexer, parser, evaluator, and
 REPL**, ready to `go build` and run. No compiler theory required.
 
+> [!IMPORTANT]
+> MkLang is in early development. It's not ready for production use yet.
+> MkLang is based on an early version of [the Zod language](https://github.com/theawakener0/Zod).
+
 Bundled example languages:
 
 - [Zod](langs/zod.json) — the default language. A small dynamically typed
@@ -111,7 +115,7 @@ renders a handful of config-specific files and copies the engine unchanged:
 
 Each generated project is **self-contained** (no MkLang dependency) and depends
 only on the Go standard library. The same interpreter implements every
-generated language — your config *is* the language.
+generated language, so your config *is* the language.
 
 ---
 
@@ -125,107 +129,158 @@ exception:
 > entirely — deleting a line from an edited template removes that token from
 > your language.
 
-`mklang init` writes the full template (the Zod language). Here it is with
-annotations:
+`mklang init` writes the full template (the bundled Zod language). Here is the
+exact output, unchanged:
 
-```jsonc
+```json
 {
-  "name": "MyLang",                  // language name (also the default dir/binary)
-  "module": "github.com/you/mylang", // Go module path for the generated project
+  "name": "Zod",
+  "module": "github.com/yourname/yourlang",
   "version": "0.1.0",
-
   "features": {
-    "floats": true,                  // float literals (1.5) and math
-    "strings": true,                 // string literals "hello"
-    "arrays": true,                  // [a, b, c]
-    "hashes": true,                  // {key: value, ...}
-    "for_loops": true,               // for (init; cond; update) { }
-    "infinite_loops": true,          // loop { }
-    "try": true,                     // try(fn) builtin / recoverable errors
-    "prefix_postfix_inc_dec": true,  // ++ and -- (x++ / ++x)
-    "compound_assignment": true,     // +=  -=  *=  /=
-    "elseif": true,                  // elseif / else-if chains
-    "matrices": true,                // matrix() builtin and arithmetic
-    "auto_semicolons": true,         // newlines end statements
-    "comments": true,                // line comments (//, #, ...)
-    "block_comments": true           // /* */ block comments
+    "floats": true,
+    "strings": true,
+    "arrays": true,
+    "hashes": true,
+    "for_loops": true,
+    "infinite_loops": true,
+    "try": true,
+    "prefix_postfix_inc_dec": true,
+    "compound_assignment": true,
+    "elseif": true,
+    "matrices": true,
+    "auto_semicolons": true,
+    "comments": true,
+    "block_comments": true
   },
-
   "comments": {
     "line": "//",
     "block_start": "/*",
     "block_end": "*/"
   },
-
   "identifier": {
-    "start_letters": true,           // identifiers may start with a letter...
-    "extra_start": "_",              // ...or any of these characters
-    "part_letters_digits": true,     // later characters may be letters/digits
+    "start_letters": true,
+    "extra_start": "_",
+    "part_letters_digits": true,
     "extra_part": "_"
   },
-
   "string": {
-    "delimiter": "\"",               // string quote character
-    "escape_sequences": true         // \n \t \r \\ \" \xNN
+    "delimiter": "\"",
+    "escape_sequences": true
   },
-
   "keywords": {
-    "fn": "FUNCTION",
-    "let": "LET",
-    "true": "TRUE",
-    "false": "FALSE",
-    "null": "NULL",
-    "if": "IF",
-    "elseif": "ELSEIF",
-    "else": "ELSE",
-    "return": "RETURN",
-    "for": "FOR",
-    "loop": "LOOP",
     "break": "BREAK",
-    "continue": "CONTINUE"
+    "continue": "CONTINUE",
+    "else": "ELSE",
+    "elseif": "ELSEIF",
+    "false": "FALSE",
+    "fn": "FUNCTION",
+    "for": "FOR",
+    "if": "IF",
+    "let": "LET",
+    "loop": "LOOP",
+    "null": "NULL",
+    "return": "RETURN",
+    "true": "TRUE"
   },
-
   "symbols": {
-    "=": "ASSIGN", "==": "EQ", "!=": "NOTEQ", "!": "BANG",
-    "+": "PLUS", "-": "MINUS", "*": "ASTERISK", "/": "SLASH",
-    "++": "INC", "--": "DEC",
-    "+=": "INCASSIGN", "-=": "DECDASSIGN", "*=": "MLTASSIGN", "/=": "DIVASSIGN",
-    "<": "LT", "<=": "LTEQ", ">": "GT", ">=": "GTEQ",
-    "&&": "LAND", "||": "LOR", ":=": "ASSIGNCHAR",
-    "(": "LPAREN", ")": "RPAREN", "{": "LBRACE", "}": "RBRACE",
-    "[": "LBRACKET", "]": "RBRACKET",
-    ",": "COMMA", ":": "COLOMN", ";": "SEMICOLON", ".": "DOT"
+    "!": "BANG",
+    "!=": "NOTEQ",
+    "\u0026\u0026": "LAND",
+    "(": "LPAREN",
+    ")": "RPAREN",
+    "*": "ASTERISK",
+    "*=": "MLTASSIGN",
+    "+": "PLUS",
+    "++": "INC",
+    "+=": "INCASSIGN",
+    ",": "COMMA",
+    "-": "MINUS",
+    "--": "DEC",
+    "-=": "DECDASSIGN",
+    ".": "DOT",
+    "/": "SLASH",
+    "/=": "DIVASSIGN",
+    ":": "COLOMN",
+    ":=": "ASSIGNCHAR",
+    ";": "SEMICOLON",
+    "\u003c": "LT",
+    "\u003c=": "LTEQ",
+    "=": "ASSIGN",
+    "==": "EQ",
+    "\u003e": "GT",
+    "\u003e=": "GTEQ",
+    "[": "LBRACKET",
+    "]": "RBRACKET",
+    "{": "LBRACE",
+    "||": "LOR",
+    "}": "RBRACE"
   },
-
   "builtins": {
-    "len": "len", "println": "println", "printf": "printf", "input": "input",
-    "int": "int", "float": "float", "string": "string", "type": "type",
-    "first": "first", "last": "last", "pop": "pop", "push": "push",
-    "insert": "insert", "remove": "remove", "keys": "keys", "vals": "vals",
-    "contains": "contains", "random": "random", "matrix": "matrix",
-    "make": "make", "color": "color", "sleep": "sleep", "exp": "exp",
-    "pi": "pi", "try": "try"
+    "color": "color",
+    "contains": "contains",
+    "exp": "exp",
+    "first": "first",
+    "float": "float",
+    "input": "input",
+    "insert": "insert",
+    "int": "int",
+    "keys": "keys",
+    "last": "last",
+    "len": "len",
+    "make": "make",
+    "matrix": "matrix",
+    "pi": "pi",
+    "pop": "pop",
+    "printf": "printf",
+    "println": "println",
+    "push": "push",
+    "random": "random",
+    "remove": "remove",
+    "sleep": "sleep",
+    "string": "string",
+    "try": "try",
+    "type": "type",
+    "vals": "vals"
   },
-
   "statement_end_tokens": [
-    "IDENT", "INT", "FLOAT", "STRING", "TRUE", "FALSE", "NULL",
-    "RPAREN", "RBRACKET", "RBRACE", "INC", "DEC",
-    "RETURN", "BREAK", "CONTINUE"
+    "IDENT",
+    "INT",
+    "FLOAT",
+    "STRING",
+    "TRUE",
+    "FALSE",
+    "NULL",
+    "RPAREN",
+    "RBRACKET",
+    "RBRACE",
+    "INC",
+    "DEC",
+    "RETURN",
+    "BREAK",
+    "CONTINUE"
   ],
-
   "output": {
-    "true": "true",                  // how boolean true prints
+    "true": "true",
     "false": "false",
     "null": "null",
     "break": "break",
     "continue": "continue",
-    "function": "fn",                // how functions print
-    "array_open": "[", "array_close": "]", "array_separator": ", ",
-    "hash_open": "{", "hash_close": "}", "hash_separator": ", ",
+    "function": "fn",
+    "array_open": "[",
+    "array_close": "]",
+    "array_separator": ", ",
+    "hash_open": "{",
+    "hash_close": "}",
+    "hash_separator": ", ",
     "hash_keyval": ": "
   }
 }
 ```
+
+To adapt it to your own language, change `name`, `module`, and `version`, then
+tweak the spellings and features you care about. The
+[field reference](#field-reference) table below explains what each part does.
 
 ### Field reference
 
