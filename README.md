@@ -3,7 +3,7 @@
 > Describe a programming language in one JSON file — MkLang builds the whole thing.
 
 MkLang is a language *factory*. You write a JSON config that describes your
-language — its name, keywords, operators, and features — and MkLang generates a
+language, its name, keywords, operators, and features and MkLang generates a
 complete, self-contained Go project with a **lexer, parser, evaluator, and
 REPL**, ready to `go build` and run. No compiler theory required.
 
@@ -51,6 +51,9 @@ curl -fsSL https://raw.githubusercontent.com/theawakener0/MkLang/main/install.sh
 ```sh
 go install github.com/theawakener0/MkLang@latest
 ```
+
+> [!NOTE]
+> Using `go install` will make the binary name `MkLang`, so you have to type `MkLang` not `mklang`
 
 ### Prebuilt binaries
 
