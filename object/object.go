@@ -1,0 +1,296 @@
+package object
+
+import (
+	"bytes"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"hash/fnv"
+
+	"github.com/theawakener0/MkLang/ast"
+	tk "github.com/theawakener0/MkLang/token"
+)
+
+type ObjectType string
+
+const (
+	INTEGER_OBJ = "INTEGER"
+	FLOAT_OBJ = "FLOAT"
+	BOOLEAN_OBJ = "BOOLEAN"
+	NULL_OBJ = "NULL"
+	RETURN_VALUE_OBJ = "RETURN_VALUE"
+	ERROR_OBJ = "ERROR"
+	BREAK_OBJ = "BREAK"
+	CONTINUE_OBJ = "CONTINUE"
+	FUNCTION_OBJ = "FUNCTION"
+	STRING_OBJ = "STRING"
+	BUILTIN_OBJ = "BUILTIN"
+	ARRAY_OBJ = "ARRAY"
+	HASH_OBJ = "HASH"
+	MATRIX_OBJ = "MATRIX"
+)
+
+type Object interface {
+	Type() ObjectType
+	Inspect() string
+}
+
+type HashKey struct {
+	Type ObjectType
+	Value uint64
+}
+
+type Hashable interface {
+	HashKey() HashKey
+}
+
+type Integer struct {
+	Value int64
+}
+
+func (i *Integer) Type() ObjectType {
+	return INTEGER_OBJ
+}
+func (i *Integer) Inspect() string {
+	return fmt.Sprintf("%d", i.Value)
+}
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+}
+
+type Float struct {
+	Value float64
+}
+
+func (f *Float) Type() ObjectType {
+	return FLOAT_OBJ
+}
+func (f *Float) Inspect() string {
+	s := strconv.FormatFloat(f.Value, 'f', -1, 64)
+	if !strings.Contains(s, ".") {
+		s += ".0"
+	}
+	return s
+}
+func (f *Float) HashKey() HashKey {
+	return HashKey{Type: f.Type(), Value: math.Float64bits(f.Value)}
+}
+
+type Boolean struct {
+	Value bool
+}
+
+func (b *Boolean) Type() ObjectType {
+	return BOOLEAN_OBJ
+}
+func (b *Boolean) Inspect() string {
+	if b.Value {
+		return tk.Current.Output.True
+	}
+	return tk.Current.Output.False
+}
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+
+	return HashKey{Type: b.Type(), Value: value}
+}
+
+type Null struct {}
+
+func (n *Null) Type() ObjectType {
+	return NULL_OBJ
+}
+func (n *Null) Inspect() string {
+	return tk.Current.Output.Null
+}
+
+type ReturnValue struct {
+	Value Object
+}
+
+func (rv *ReturnValue) Type() ObjectType {
+	return RETURN_VALUE_OBJ
+}
+func (rv *ReturnValue) Inspect() string {
+	return rv.Value.Inspect()
+}
+
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjectType {
+	return ERROR_OBJ
+}
+
+func (e *Error) Inspect() string {
+	return fmt.Sprintf("Error: %s", e.Message)
+}
+
+type Break struct{}
+
+func (b *Break) Type() ObjectType {
+	return BREAK_OBJ
+}
+func (b *Break) Inspect() string {
+	return tk.Current.Output.Break
+}
+
+type Continue struct{}
+
+func (c *Continue) Type() ObjectType {
+	return CONTINUE_OBJ
+}
+func (c *Continue) Inspect() string {
+	return tk.Current.Output.Continue
+}
+
+type Function struct {
+	Parameters 	[]*ast.Identifier
+	Body 		*ast.BlockStatement
+	Env 		*Enviroment
+}
+
+func (f *Function) Type() ObjectType {
+	return FUNCTION_OBJ
+}
+
+func (f *Function) Inspect() string {
+	var out bytes.Buffer
+	
+	params := make([]string, 0, len(f.Parameters))
+	for _, param := range f.Parameters {
+		params = append(params, param.String())
+	}
+
+	comma := tk.SymbolLiteral(tk.COMMA) + " "
+
+	out.WriteString(tk.Current.Output.Function)
+	out.WriteString(tk.SymbolLiteral(tk.LPAREN))
+	out.WriteString(strings.Join(params, comma))
+	out.WriteString(tk.SymbolLiteral(tk.RPAREN))
+	out.WriteString(" ")
+	out.WriteString(tk.SymbolLiteral(tk.LBRACE))
+	out.WriteString("\n")
+	out.WriteString(f.Body.String())
+	out.WriteString("\n")
+	out.WriteString(tk.SymbolLiteral(tk.RBRACE))
+
+	return out.String()
+}
+
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType {
+	return STRING_OBJ
+}
+func (s *String) Inspect() string {
+	return s.Value
+}
+func (s *String) HashKey() HashKey {
+	hash := fnv.New64a()
+	hash.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: hash.Sum64()}
+}
+
+type BuiltinFn func(args ...Object) Object
+
+type Builtin struct {
+	Fn BuiltinFn
+}
+
+func (b *Builtin) Type() ObjectType {
+	return BUILTIN_OBJ
+}
+func (b *Builtin) Inspect() string {
+	return "builtin function"
+}
+
+type Array struct {
+	Elements []Object
+}
+
+func (a *Array) Type() ObjectType {
+	return ARRAY_OBJ
+}
+func (a *Array) Inspect() string {
+	var out bytes.Buffer
+
+	elements := make([]string, 0, len(a.Elements))
+	for _, element := range a.Elements {
+		elements = append(elements, element.Inspect())
+	}
+
+	out.WriteString(tk.Current.Output.ArrayOpen)
+	out.WriteString(strings.Join(elements, tk.Current.Output.ArraySep))
+	out.WriteString(tk.Current.Output.ArrayClose)
+
+	return out.String()
+}
+
+type Matrix struct {
+	Rows int
+	Cols int
+	Data [][]Object
+}
+
+func (m *Matrix) Type() ObjectType {
+	return MATRIX_OBJ
+}
+func (m *Matrix) Inspect() string {
+	var out bytes.Buffer
+
+	rows := make([]string, 0, m.Rows)
+	for _, row := range m.Data {
+		elements := make([]string, 0, m.Cols)
+		for _, element := range row {
+			elements = append(elements, element.Inspect())
+		}
+		rows = append(rows, tk.Current.Output.ArrayOpen+strings.Join(elements, tk.Current.Output.ArraySep)+tk.Current.Output.ArrayClose)
+	}
+
+	out.WriteString(tk.Current.Output.ArrayOpen)
+	out.WriteString(strings.Join(rows, tk.Current.Output.ArraySep))
+	out.WriteString(tk.Current.Output.ArrayClose)
+
+	return out.String()
+}
+
+type HashPair struct {
+	Key		Object
+	Value	Object
+}
+
+type Hash struct {
+	Pairs	map[HashKey]HashPair
+	Order	[]HashKey
+}
+
+func (h *Hash) Type() ObjectType {
+	return HASH_OBJ
+}
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	pairs := make([]string, 0, len(h.Pairs))
+	for _, key := range h.Order {
+		pair := h.Pairs[key]
+		pairs = append(pairs, fmt.Sprintf("%s%s%s", pair.Key.Inspect(), tk.Current.Output.HashKeyVal, pair.Value.Inspect()))
+	}
+
+	out.WriteString(tk.Current.Output.HashOpen)
+	out.WriteString(strings.Join(pairs, tk.Current.Output.HashSep))
+	out.WriteString(tk.Current.Output.HashClose)
+
+	return out.String()
+}
+

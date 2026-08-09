@@ -1,0 +1,33 @@
+# A short demo of Pythonish, a Python-like language generated with MkLang.
+# Functions are anonymous (like the engine): def (params) { body } assigned to a
+# variable. Blocks use braces, and conditionals require parentheses.
+
+greet = def (name) {
+    print("Hello, " + name + "!")
+    return name
+}
+
+greet("world")
+
+x = 5
+if (x > 3 and x < 10) {
+    print("x is between 3 and 10")
+} elif (x == 0) {
+    print("x is zero")
+} else {
+    print("x is large")
+}
+
+for (i = 0; i < 3; i = i + 1) {
+    print(i)
+}
+
+nums = [1, 2, 3]
+total = 0
+for (i = 0; i < len(nums); i = i + 1) {
+    total += nums[i]
+}
+print(total)
+
+person = {"name": "Zod", "age": 26}
+print(person["name"] + " is " + str(person["age"]))
